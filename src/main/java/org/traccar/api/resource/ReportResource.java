@@ -16,8 +16,10 @@
  */
 package org.traccar.api.resource;
 
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.ws.rs.core.Context;
+import java.util.Collection;
+import java.util.Date;
+import java.util.List;
+
 import org.traccar.api.SimpleObjectResource;
 import org.traccar.helper.LogAction;
 import org.traccar.model.Event;
@@ -40,6 +42,7 @@ import org.traccar.reports.model.TripReportItem;
 import org.traccar.storage.StorageException;
 
 import jakarta.inject.Inject;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
@@ -47,13 +50,11 @@ import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.WebApplicationException;
+import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.HttpHeaders;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.StreamingOutput;
-import java.util.Collection;
-import java.util.Date;
-import java.util.List;
 
 @Path("reports")
 @Produces(MediaType.APPLICATION_JSON)
@@ -104,7 +105,7 @@ public class ReportResource extends SimpleObjectResource<Report> {
             StreamingOutput stream = output -> {
                 try {
                     executor.execute(output);
-                } catch (StorageException e) {
+                } catch (StorageException | com.itextpdf.text.DocumentException e) {
                     throw new WebApplicationException(e);
                 }
             };

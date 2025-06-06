@@ -56,7 +56,7 @@ public class ReportMailer {
 
                 User user = permissionsService.getUser(userId);
                 mailManager.sendMessage(user, false, "Report", "The report is in the attachment.", attachment);
-            } catch (StorageException | IOException | MessagingException e) {
+            } catch (StorageException | IOException | MessagingException | com.itextpdf.text.DocumentException e) {
                 LOGGER.warn("Email report failed", e);
             }
         }).start();

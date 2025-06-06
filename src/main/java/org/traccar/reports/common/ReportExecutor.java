@@ -15,11 +15,13 @@
  */
 package org.traccar.reports.common;
 
-import org.traccar.storage.StorageException;
-
 import java.io.IOException;
 import java.io.OutputStream;
 
+import org.traccar.storage.StorageException;
+
+import com.itextpdf.text.DocumentException;
+
 public interface ReportExecutor {
-    void execute(OutputStream stream) throws StorageException, IOException;
+    void execute(OutputStream stream) throws StorageException, IOException, DocumentException;
 }

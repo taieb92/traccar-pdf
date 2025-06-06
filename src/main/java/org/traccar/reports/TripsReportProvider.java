@@ -16,9 +16,13 @@
  */
 package org.traccar.reports;
 
-import org.apache.poi.ss.util.WorkbookUtil;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Date;
+
 import org.traccar.config.Config;
-import org.traccar.config.Keys;
 import org.traccar.helper.model.DeviceUtil;
 import org.traccar.model.Device;
 import org.traccar.model.Group;
@@ -31,16 +35,18 @@ import org.traccar.storage.query.Columns;
 import org.traccar.storage.query.Condition;
 import org.traccar.storage.query.Request;
 
+import com.itextpdf.text.Document;
+import com.itextpdf.text.DocumentException;
+import com.itextpdf.text.Element;
+import com.itextpdf.text.Font;
+import com.itextpdf.text.PageSize;
+import com.itextpdf.text.Paragraph;
+import com.itextpdf.text.Phrase;
+import com.itextpdf.text.pdf.PdfPCell;
+import com.itextpdf.text.pdf.PdfPTable;
+import com.itextpdf.text.pdf.PdfWriter;
+
 import jakarta.inject.Inject;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Date;
 
 public class TripsReportProvider {
 
@@ -69,16 +75,14 @@ public class TripsReportProvider {
 
     public void getExcel(OutputStream outputStream,
             long userId, Collection<Long> deviceIds, Collection<Long> groupIds,
-            Date from, Date to) throws StorageException, IOException {
+            Date from, Date to) throws StorageException, IOException, DocumentException {
         reportUtils.checkPeriodLimit(from, to);
 
         ArrayList<DeviceReportSection> devicesTrips = new ArrayList<>();
-        ArrayList<String> sheetNames = new ArrayList<>();
         for (Device device: DeviceUtil.getAccessibleDevices(storage, userId, deviceIds, groupIds)) {
             Collection<TripReportItem> trips = reportUtils.detectTripsAndStops(device, from, to, TripReportItem.class);
             DeviceReportSection deviceTrips = new DeviceReportSection();
             deviceTrips.setDeviceName(device.getName());
-            sheetNames.add(WorkbookUtil.createSafeSheetName(deviceTrips.getDeviceName()));
             if (device.getGroupId() > 0) {
                 Group group = storage.getObject(Group.class, new Request(
                         new Columns.All(), new Condition.Equals("id", device.getGroupId())));
@@ -90,15 +94,67 @@ public class TripsReportProvider {
             devicesTrips.add(deviceTrips);
         }
 
-        File file = Paths.get(config.getString(Keys.TEMPLATES_ROOT), "export", "trips.xlsx").toFile();
-        try (InputStream inputStream = new FileInputStream(file)) {
-            var context = reportUtils.initializeContext(userId);
-            context.putVar("devices", devicesTrips);
-            context.putVar("sheetNames", sheetNames);
-            context.putVar("from", from);
-            context.putVar("to", to);
-            reportUtils.processTemplateWithSheets(inputStream, outputStream, context);
+        Document document = new Document(PageSize.A4.rotate());
+        PdfWriter.getInstance(document, outputStream);
+        document.open();
+
+        // Add title
+        Font titleFont = new Font(Font.FontFamily.HELVETICA, 16, Font.BOLD);
+        Paragraph title = new Paragraph("Trips Report", titleFont);
+        title.setAlignment(Element.ALIGN_CENTER);
+        title.setSpacingAfter(20);
+        document.add(title);
+
+        // Add date range
+        Font dateFont = new Font(Font.FontFamily.HELVETICA, 12);
+        Paragraph dateRange = new Paragraph(
+            String.format("From: %s to %s", from, to),
+            dateFont
+        );
+        dateRange.setAlignment(Element.ALIGN_CENTER);
+        dateRange.setSpacingAfter(20);
+        document.add(dateRange);
+
+        // Add trips data
+        for (DeviceReportSection deviceTrips : devicesTrips) {
+            // Add device section
+            Font deviceFont = new Font(Font.FontFamily.HELVETICA, 14, Font.BOLD);
+            String deviceName = deviceTrips.getDeviceName();
+            if (deviceTrips.getGroupName() != null) {
+                deviceName += " (" + deviceTrips.getGroupName() + ")";
+            }
+            Paragraph deviceTitle = new Paragraph(deviceName, deviceFont);
+            deviceTitle.setSpacingBefore(20);
+            deviceTitle.setSpacingAfter(10);
+            document.add(deviceTitle);
+
+            // Create table for trips
+            PdfPTable table = new PdfPTable(8);
+            table.setWidthPercentage(100);
+
+            // Add table headers
+            String[] headers = {"Start Time", "End Time", "Duration", "Distance",
+                    "Average Speed", "Max Speed", "Start Address", "End Address"};
+            for (String header : headers) {
+                table.addCell(new PdfPCell(new Phrase(header,
+                        new Font(Font.FontFamily.HELVETICA, 10, Font.BOLD))));
+            }
+
+            // Add trip data
+            for (TripReportItem trip : (Collection<TripReportItem>) deviceTrips.getObjects()) {
+                table.addCell(new PdfPCell(new Phrase(trip.getStartTime().toString())));
+                table.addCell(new PdfPCell(new Phrase(trip.getEndTime().toString())));
+                table.addCell(new PdfPCell(new Phrase(String.format("%.2f hours", trip.getDuration() / 3600000.0))));
+                table.addCell(new PdfPCell(new Phrase(String.format("%.2f km", trip.getDistance() / 1000.0))));
+                table.addCell(new PdfPCell(new Phrase(String.format("%.2f km/h", trip.getAverageSpeed()))));
+                table.addCell(new PdfPCell(new Phrase(String.format("%.2f km/h", trip.getMaxSpeed()))));
+                table.addCell(new PdfPCell(new Phrase(trip.getStartAddress() != null ? trip.getStartAddress() : "")));
+                table.addCell(new PdfPCell(new Phrase(trip.getEndAddress() != null ? trip.getEndAddress() : "")));
+            }
+            document.add(table);
         }
+
+        document.close();
     }
 
 }
