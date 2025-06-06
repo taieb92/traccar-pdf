@@ -62,6 +62,7 @@ import jakarta.ws.rs.core.StreamingOutput;
 public class ReportResource extends SimpleObjectResource<Report> {
 
     private static final String EXCEL = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+    private static final String PDF = "application/pdf";
 
     @Inject
     private CombinedReportProvider combinedReportProvider;
@@ -98,6 +99,10 @@ public class ReportResource extends SimpleObjectResource<Report> {
     }
 
     private Response executeReport(long userId, boolean mail, ReportExecutor executor) {
+        return executeReport(userId, mail, executor, "report.pdf");
+    }
+
+    private Response executeReport(long userId, boolean mail, ReportExecutor executor, String filename) {
         if (mail) {
             reportMailer.sendAsync(userId, executor);
             return Response.noContent().build();
@@ -110,7 +115,7 @@ public class ReportResource extends SimpleObjectResource<Report> {
                 }
             };
             return Response.ok(stream)
-                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=report.xlsx").build();
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=" + filename).build();
         }
     }
 
@@ -151,7 +156,7 @@ public class ReportResource extends SimpleObjectResource<Report> {
         return executeReport(getUserId(), mail, stream -> {
             actionLogger.report(request, getUserId(), false, "route", from, to, deviceIds, groupIds);
             routeReportProvider.getExcel(stream, getUserId(), deviceIds, groupIds, from, to);
-        });
+        }, "route-report.xlsx");
     }
 
     @Path("route/{type:xlsx|mail}")
@@ -195,7 +200,7 @@ public class ReportResource extends SimpleObjectResource<Report> {
         return executeReport(getUserId(), mail, stream -> {
             actionLogger.report(request, getUserId(), false, "events", from, to, deviceIds, groupIds);
             eventsReportProvider.getExcel(stream, getUserId(), deviceIds, groupIds, types, alarms, from, to);
-        });
+        }, "events-report.xlsx");
     }
 
     @Path("events/{type:xlsx|mail}")
@@ -239,7 +244,7 @@ public class ReportResource extends SimpleObjectResource<Report> {
         return executeReport(getUserId(), mail, stream -> {
             actionLogger.report(request, getUserId(), false, "summary", from, to, deviceIds, groupIds);
             summaryReportProvider.getExcel(stream, getUserId(), deviceIds, groupIds, from, to, daily);
-        });
+        }, "summary-report.xlsx");
     }
 
     @Path("summary/{type:xlsx|mail}")
@@ -269,7 +274,7 @@ public class ReportResource extends SimpleObjectResource<Report> {
 
     @Path("trips")
     @GET
-    @Produces(EXCEL)
+    @Produces(PDF)
     public Response getTripsExcel(
             @QueryParam("deviceId") List<Long> deviceIds,
             @QueryParam("groupId") List<Long> groupIds,
@@ -280,12 +285,12 @@ public class ReportResource extends SimpleObjectResource<Report> {
         return executeReport(getUserId(), mail, stream -> {
             actionLogger.report(request, getUserId(), false, "trips", from, to, deviceIds, groupIds);
             tripsReportProvider.getExcel(stream, getUserId(), deviceIds, groupIds, from, to);
-        });
+        }, "trips-report.pdf");
     }
 
     @Path("trips/{type:xlsx|mail}")
     @GET
-    @Produces(EXCEL)
+    @Produces(PDF)
     public Response getTripsExcel(
             @QueryParam("deviceId") List<Long> deviceIds,
             @QueryParam("groupId") List<Long> groupIds,
@@ -320,7 +325,7 @@ public class ReportResource extends SimpleObjectResource<Report> {
         return executeReport(getUserId(), mail, stream -> {
             actionLogger.report(request, getUserId(), false, "stops", from, to, deviceIds, groupIds);
             stopsReportProvider.getExcel(stream, getUserId(), deviceIds, groupIds, from, to);
-        });
+        }, "stops-report.xlsx");
     }
 
     @Path("stops/{type:xlsx|mail}")
@@ -343,7 +348,7 @@ public class ReportResource extends SimpleObjectResource<Report> {
         permissionsService.checkRestriction(getUserId(), UserRestrictions::getDisableReports);
         return executeReport(getUserId(), type.equals("mail"), stream -> {
             devicesReportProvider.getExcel(stream, getUserId());
-        });
+        }, "devices-report.xlsx");
     }
 
 }
