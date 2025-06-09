@@ -102,15 +102,21 @@ public class TripsReportProvider {
         // Create BaseFont for Arabic support
         BaseFont arabicFont;
         try {
-            // Try to use Arial Unicode MS which supports Arabic
-            arabicFont = BaseFont.createFont("Arial Unicode MS", BaseFont.IDENTITY_H, BaseFont.EMBEDDED);
+            // Use STSong-Light font which supports Unicode including Arabic
+            // This font is included with iText and provides better Unicode support
+            arabicFont = BaseFont.createFont("STSong-Light", "UniGB-UCS2-H", BaseFont.NOT_EMBEDDED);
         } catch (Exception e) {
             try {
-                // Fallback to built-in Helvetica with Identity-H encoding for better Unicode support
-                arabicFont = BaseFont.createFont(BaseFont.HELVETICA, BaseFont.IDENTITY_H, BaseFont.NOT_EMBEDDED);
+                // Fallback: Use built-in Times font with Identity-H encoding for Unicode
+                arabicFont = BaseFont.createFont(BaseFont.TIMES_ROMAN, BaseFont.IDENTITY_H, BaseFont.NOT_EMBEDDED);
             } catch (Exception ex) {
-                // Final fallback to default font
-                arabicFont = BaseFont.createFont(BaseFont.HELVETICA, BaseFont.CP1252, BaseFont.NOT_EMBEDDED);
+                try {
+                    // Final fallback: Use Helvetica with CP1252 encoding
+                    System.err.println("Warning: Arabic text may not display correctly - using basic font");
+                    arabicFont = BaseFont.createFont(BaseFont.HELVETICA, BaseFont.CP1252, BaseFont.NOT_EMBEDDED);
+                } catch (Exception exc) {
+                    throw new DocumentException("Failed to create any font", exc);
+                }
             }
         }
 
@@ -122,14 +128,14 @@ public class TripsReportProvider {
         Font tableCellFont = new Font(arabicFont, 10);
 
         // Add title
-        Paragraph title = new Paragraph("Trips Report", titleFont);
+        Paragraph title = new Paragraph("Rapport de Trajets", titleFont);
         title.setAlignment(Element.ALIGN_CENTER);
         title.setSpacingAfter(20);
         document.add(title);
 
         // Add date range
         Paragraph dateRange = new Paragraph(
-            String.format("From: %s to %s", from, to),
+            String.format("Du: %s au: %s", from, to),
             dateFont
         );
         dateRange.setAlignment(Element.ALIGN_CENTER);
@@ -166,7 +172,7 @@ public class TripsReportProvider {
                 table.addCell(new PdfPCell(new Phrase(trip.getStartTime().toString(), tableCellFont)));
                 table.addCell(new PdfPCell(new Phrase(trip.getEndTime().toString(), tableCellFont)));
                 table.addCell(new PdfPCell(new Phrase(
-                        String.format("%.2f hours", trip.getDuration() / 3600000.0), tableCellFont)));
+                        String.format("%.2f heures", trip.getDuration() / 3600000.0), tableCellFont)));
                 table.addCell(new PdfPCell(new Phrase(
                         String.format("%.2f km", trip.getDistance() / 1000.0), tableCellFont)));
                 table.addCell(new PdfPCell(new Phrase(
