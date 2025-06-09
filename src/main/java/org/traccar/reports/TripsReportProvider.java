@@ -4,7 +4,7 @@
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
+ * You may obtain a copy of the License a
  *
  *     http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -102,8 +102,7 @@ public class TripsReportProvider {
         // Create BaseFont for Arabic support
         BaseFont arabicFont;
         try {
-            // Use the same font approach as the web frontend
-            // which successfully displays Arabic text
+            // Use Arabic font that we tested successfully
             arabicFont = createArabicSupportedFont();
         } catch (Exception e) {
             // Absolute fallback
@@ -181,24 +180,36 @@ public class TripsReportProvider {
     }
 
     private BaseFont createArabicSupportedFont() throws Exception {
-        // Use the same font approach as the web frontend
-        // which successfully displays Arabic text
-        try {
-            // Try Arial Unicode MS - the standard font for Arabic text support
-            BaseFont font = BaseFont.createFont("Arial Unicode MS", BaseFont.IDENTITY_H, BaseFont.NOT_EMBEDDED);
-            System.out.println("Successfully loaded Arial Unicode MS for Arabic support");
-            return font;
-        } catch (Exception e1) {
+        // Prioritize Linux font paths since the solution runs on Linux
+        String[] fontPaths = {
+            // Linux Arabic-supporting fonts (prioritized)
+            "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+            "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf",
+            "/usr/share/fonts/truetype/noto/NotoSans-Regular.ttf",
+            "/usr/share/fonts/TTF/DejaVuSans.ttf",
+            "/usr/share/fonts/TTF/LiberationSans-Regular.ttf"
+        };
+
+        // Try font paths with IDENTITY_H encoding (proven to work for Arabic)
+        for (String fontPath : fontPaths) {
             try {
-                // Fallback to built-in Arial with proper encoding
-                BaseFont font = BaseFont.createFont(BaseFont.HELVETICA, BaseFont.IDENTITY_H, BaseFont.NOT_EMBEDDED);
-                System.out.println("Using Helvetica with Unicode encoding for Arabic text");
+                BaseFont font = BaseFont.createFont(fontPath, BaseFont.IDENTITY_H, BaseFont.NOT_EMBEDDED);
+                System.out.println("Successfully loaded Arabic font: " + fontPath);
                 return font;
-            } catch (Exception e2) {
-                // Final fallback
-                System.err.println("WARNING: Using basic font - Arabic text may not display correctly");
-                return BaseFont.createFont(BaseFont.HELVETICA, BaseFont.WINANSI, BaseFont.NOT_EMBEDDED);
+            } catch (Exception e) {
+                // Continue to next font
             }
+        }
+
+        // Fallback to system font names
+        try {
+            BaseFont font = BaseFont.createFont(BaseFont.HELVETICA, BaseFont.IDENTITY_H, BaseFont.NOT_EMBEDDED);
+            System.out.println("Using Helvetica with Unicode encoding for Arabic text");
+            return font;
+        } catch (Exception e) {
+            // Final fallback
+            System.err.println("WARNING: Using basic font - Arabic text may not display correctly");
+            return BaseFont.createFont(BaseFont.HELVETICA, BaseFont.WINANSI, BaseFont.NOT_EMBEDDED);
         }
     }
 
