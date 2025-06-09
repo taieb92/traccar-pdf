@@ -102,29 +102,9 @@ public class TripsReportProvider {
         // Create BaseFont for Arabic support
         BaseFont arabicFont;
         try {
-            // Try to load a system font that supports Arabic characters
-            // Most systems have either Arial or similar fonts that support Unicode
-            try {
-                // First attempt: Arial with Unicode support (most common)
-                arabicFont = BaseFont.createFont("arial.ttf", BaseFont.IDENTITY_H, BaseFont.EMBEDDED);
-            } catch (Exception e1) {
-                try {
-                    // Second attempt: System Arial without embedding
-                    arabicFont = BaseFont.createFont("Arial", BaseFont.IDENTITY_H, BaseFont.NOT_EMBEDDED);
-                } catch (Exception e2) {
-                    try {
-                        // Third attempt: Built-in Times with proper Unicode encoding
-                        arabicFont = BaseFont.createFont(
-                                BaseFont.TIMES_ROMAN, BaseFont.IDENTITY_H, BaseFont.NOT_EMBEDDED);
-                    } catch (Exception e3) {
-                        // Final fallback - use basic font and warn
-                        System.err.println("Warning: Could not create Unicode font for Arabic text. "
-                                + "Arabic text may not display correctly.");
-                        arabicFont = BaseFont.createFont(
-                                BaseFont.HELVETICA, BaseFont.WINANSI, BaseFont.NOT_EMBEDDED);
-                    }
-                }
-            }
+            // Use the same font approach as the web frontend
+            // which successfully displays Arabic text
+            arabicFont = createArabicSupportedFont();
         } catch (Exception e) {
             // Absolute fallback
             throw new DocumentException("Failed to create any font for the PDF", e);
@@ -198,6 +178,28 @@ public class TripsReportProvider {
         }
 
         document.close();
+    }
+
+    private BaseFont createArabicSupportedFont() throws Exception {
+        // Use the same font approach as the web frontend
+        // which successfully displays Arabic text
+        try {
+            // Try Arial Unicode MS - the standard font for Arabic text support
+            BaseFont font = BaseFont.createFont("Arial Unicode MS", BaseFont.IDENTITY_H, BaseFont.NOT_EMBEDDED);
+            System.out.println("Successfully loaded Arial Unicode MS for Arabic support");
+            return font;
+        } catch (Exception e1) {
+            try {
+                // Fallback to built-in Arial with proper encoding
+                BaseFont font = BaseFont.createFont(BaseFont.HELVETICA, BaseFont.IDENTITY_H, BaseFont.NOT_EMBEDDED);
+                System.out.println("Using Helvetica with Unicode encoding for Arabic text");
+                return font;
+            } catch (Exception e2) {
+                // Final fallback
+                System.err.println("WARNING: Using basic font - Arabic text may not display correctly");
+                return BaseFont.createFont(BaseFont.HELVETICA, BaseFont.WINANSI, BaseFont.NOT_EMBEDDED);
+            }
+        }
     }
 
 }
