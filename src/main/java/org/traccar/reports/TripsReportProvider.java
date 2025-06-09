@@ -42,6 +42,7 @@ import com.itextpdf.text.Font;
 import com.itextpdf.text.PageSize;
 import com.itextpdf.text.Paragraph;
 import com.itextpdf.text.Phrase;
+import com.itextpdf.text.pdf.BaseFont;
 import com.itextpdf.text.pdf.PdfPCell;
 import com.itextpdf.text.pdf.PdfPTable;
 import com.itextpdf.text.pdf.PdfWriter;
@@ -98,15 +99,35 @@ public class TripsReportProvider {
         PdfWriter.getInstance(document, outputStream);
         document.open();
 
+        // Create BaseFont for Arabic support
+        BaseFont arabicFont;
+        try {
+            // Try to use Arial Unicode MS which supports Arabic
+            arabicFont = BaseFont.createFont("Arial Unicode MS", BaseFont.IDENTITY_H, BaseFont.EMBEDDED);
+        } catch (Exception e) {
+            try {
+                // Fallback to built-in Helvetica with Identity-H encoding for better Unicode support
+                arabicFont = BaseFont.createFont(BaseFont.HELVETICA, BaseFont.IDENTITY_H, BaseFont.NOT_EMBEDDED);
+            } catch (Exception ex) {
+                // Final fallback to default font
+                arabicFont = BaseFont.createFont(BaseFont.HELVETICA, BaseFont.CP1252, BaseFont.NOT_EMBEDDED);
+            }
+        }
+
+        // Create fonts with Arabic support
+        Font titleFont = new Font(arabicFont, 16, Font.BOLD);
+        Font dateFont = new Font(arabicFont, 12);
+        Font deviceFont = new Font(arabicFont, 14, Font.BOLD);
+        Font tableHeaderFont = new Font(arabicFont, 10, Font.BOLD);
+        Font tableCellFont = new Font(arabicFont, 10);
+
         // Add title
-        Font titleFont = new Font(Font.FontFamily.HELVETICA, 16, Font.BOLD);
         Paragraph title = new Paragraph("Trips Report", titleFont);
         title.setAlignment(Element.ALIGN_CENTER);
         title.setSpacingAfter(20);
         document.add(title);
 
         // Add date range
-        Font dateFont = new Font(Font.FontFamily.HELVETICA, 12);
         Paragraph dateRange = new Paragraph(
             String.format("From: %s to %s", from, to),
             dateFont
@@ -118,7 +139,6 @@ public class TripsReportProvider {
         // Add trips data
         for (DeviceReportSection deviceTrips : devicesTrips) {
             // Add device section
-            Font deviceFont = new Font(Font.FontFamily.HELVETICA, 14, Font.BOLD);
             String deviceName = deviceTrips.getDeviceName();
             if (deviceTrips.getGroupName() != null) {
                 deviceName += " (" + deviceTrips.getGroupName() + ")";
@@ -133,23 +153,22 @@ public class TripsReportProvider {
             table.setWidthPercentage(100);
 
             // Add table headers
-            String[] headers = {"Start Time", "End Time", "Duration", "Distance",
-                    "Average Speed", "Max Speed", "Start Address", "End Address"};
+            String[] headers = {"Heure de début", "Heure de fin", "Durée", "Distance",
+                    "Vitesse moyenne", "Vitesse max", "Adresse de départ", "Adresse d'arrivée"};
             for (String header : headers) {
-                table.addCell(new PdfPCell(new Phrase(header,
-                        new Font(Font.FontFamily.HELVETICA, 10, Font.BOLD))));
+                table.addCell(new PdfPCell(new Phrase(header, tableHeaderFont)));
             }
 
             // Add trip data
             for (TripReportItem trip : (Collection<TripReportItem>) deviceTrips.getObjects()) {
-                table.addCell(new PdfPCell(new Phrase(trip.getStartTime().toString())));
-                table.addCell(new PdfPCell(new Phrase(trip.getEndTime().toString())));
-                table.addCell(new PdfPCell(new Phrase(String.format("%.2f hours", trip.getDuration() / 3600000.0))));
-                table.addCell(new PdfPCell(new Phrase(String.format("%.2f km", trip.getDistance() / 1000.0))));
-                table.addCell(new PdfPCell(new Phrase(String.format("%.2f km/h", trip.getAverageSpeed()))));
-                table.addCell(new PdfPCell(new Phrase(String.format("%.2f km/h", trip.getMaxSpeed()))));
-                table.addCell(new PdfPCell(new Phrase(trip.getStartAddress() != null ? trip.getStartAddress() : "")));
-                table.addCell(new PdfPCell(new Phrase(trip.getEndAddress() != null ? trip.getEndAddress() : "")));
+                table.addCell(new PdfPCell(new Phrase(trip.getStartTime().toString(), tableCellFont)));
+                table.addCell(new PdfPCell(new Phrase(trip.getEndTime().toString(), tableCellFont)));
+                table.addCell(new PdfPCell(new Phrase(String.format("%.2f hours", trip.getDuration() / 3600000.0), tableCellFont)));
+                table.addCell(new PdfPCell(new Phrase(String.format("%.2f km", trip.getDistance() / 1000.0), tableCellFont)));
+                table.addCell(new PdfPCell(new Phrase(String.format("%.2f km/h", trip.getAverageSpeed()), tableCellFont)));
+                table.addCell(new PdfPCell(new Phrase(String.format("%.2f km/h", trip.getMaxSpeed()), tableCellFont)));
+                table.addCell(new PdfPCell(new Phrase(trip.getStartAddress() != null ? trip.getStartAddress() : "", tableCellFont)));
+                table.addCell(new PdfPCell(new Phrase(trip.getEndAddress() != null ? trip.getEndAddress() : "", tableCellFont)));
             }
             document.add(table);
         }
