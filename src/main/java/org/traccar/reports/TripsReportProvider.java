@@ -102,22 +102,32 @@ public class TripsReportProvider {
         // Create BaseFont for Arabic support
         BaseFont arabicFont;
         try {
-            // Use STSong-Light font which supports Unicode including Arabic
-            // This font is included with iText and provides better Unicode support
-            arabicFont = BaseFont.createFont("STSong-Light", "UniGB-UCS2-H", BaseFont.NOT_EMBEDDED);
-        } catch (Exception e) {
+            // Try to load a system font that supports Arabic characters
+            // Most systems have either Arial or similar fonts that support Unicode
             try {
-                // Fallback: Use built-in Times font with Identity-H encoding for Unicode
-                arabicFont = BaseFont.createFont(BaseFont.TIMES_ROMAN, BaseFont.IDENTITY_H, BaseFont.NOT_EMBEDDED);
-            } catch (Exception ex) {
+                // First attempt: Arial with Unicode support (most common)
+                arabicFont = BaseFont.createFont("arial.ttf", BaseFont.IDENTITY_H, BaseFont.EMBEDDED);
+            } catch (Exception e1) {
                 try {
-                    // Final fallback: Use Helvetica with CP1252 encoding
-                    System.err.println("Warning: Arabic text may not display correctly - using basic font");
-                    arabicFont = BaseFont.createFont(BaseFont.HELVETICA, BaseFont.CP1252, BaseFont.NOT_EMBEDDED);
-                } catch (Exception exc) {
-                    throw new DocumentException("Failed to create any font", exc);
+                    // Second attempt: System Arial without embedding
+                    arabicFont = BaseFont.createFont("Arial", BaseFont.IDENTITY_H, BaseFont.NOT_EMBEDDED);
+                } catch (Exception e2) {
+                    try {
+                        // Third attempt: Built-in Times with proper Unicode encoding
+                        arabicFont = BaseFont.createFont(
+                                BaseFont.TIMES_ROMAN, BaseFont.IDENTITY_H, BaseFont.NOT_EMBEDDED);
+                    } catch (Exception e3) {
+                        // Final fallback - use basic font and warn
+                        System.err.println("Warning: Could not create Unicode font for Arabic text. "
+                                + "Arabic text may not display correctly.");
+                        arabicFont = BaseFont.createFont(
+                                BaseFont.HELVETICA, BaseFont.WINANSI, BaseFont.NOT_EMBEDDED);
+                    }
                 }
             }
+        } catch (Exception e) {
+            // Absolute fallback
+            throw new DocumentException("Failed to create any font for the PDF", e);
         }
 
         // Create fonts with Arabic support
