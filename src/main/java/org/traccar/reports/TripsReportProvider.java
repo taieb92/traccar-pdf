@@ -153,8 +153,10 @@ public class TripsReportProvider {
             table.setWidthPercentage(100);
 
             // Add table headers
-            String[] headers = {"Heure de début", "Heure de fin", "Durée", "Distance",
-                    "Vitesse moyenne", "Vitesse max", "Adresse de départ", "Adresse d'arrivée"};
+            String[] headers = {
+                "Heure de début", "Heure de fin", "Durée", "Distance",
+                "Vitesse moyenne", "Vitesse max", "Adresse de départ", "Adresse d'arrivée"
+            };
             for (String header : headers) {
                 table.addCell(new PdfPCell(new Phrase(header, tableHeaderFont)));
             }
@@ -163,12 +165,18 @@ public class TripsReportProvider {
             for (TripReportItem trip : (Collection<TripReportItem>) deviceTrips.getObjects()) {
                 table.addCell(new PdfPCell(new Phrase(trip.getStartTime().toString(), tableCellFont)));
                 table.addCell(new PdfPCell(new Phrase(trip.getEndTime().toString(), tableCellFont)));
-                table.addCell(new PdfPCell(new Phrase(String.format("%.2f hours", trip.getDuration() / 3600000.0), tableCellFont)));
-                table.addCell(new PdfPCell(new Phrase(String.format("%.2f km", trip.getDistance() / 1000.0), tableCellFont)));
-                table.addCell(new PdfPCell(new Phrase(String.format("%.2f km/h", trip.getAverageSpeed()), tableCellFont)));
-                table.addCell(new PdfPCell(new Phrase(String.format("%.2f km/h", trip.getMaxSpeed()), tableCellFont)));
-                table.addCell(new PdfPCell(new Phrase(trip.getStartAddress() != null ? trip.getStartAddress() : "", tableCellFont)));
-                table.addCell(new PdfPCell(new Phrase(trip.getEndAddress() != null ? trip.getEndAddress() : "", tableCellFont)));
+                table.addCell(new PdfPCell(new Phrase(
+                        String.format("%.2f hours", trip.getDuration() / 3600000.0), tableCellFont)));
+                table.addCell(new PdfPCell(new Phrase(
+                        String.format("%.2f km", trip.getDistance() / 1000.0), tableCellFont)));
+                table.addCell(new PdfPCell(new Phrase(
+                        String.format("%.2f km/h", trip.getAverageSpeed()), tableCellFont)));
+                table.addCell(new PdfPCell(new Phrase(
+                        String.format("%.2f km/h", trip.getMaxSpeed()), tableCellFont)));
+                table.addCell(new PdfPCell(new Phrase(
+                        trip.getStartAddress() != null ? trip.getStartAddress() : "", tableCellFont)));
+                table.addCell(new PdfPCell(new Phrase(
+                        trip.getEndAddress() != null ? trip.getEndAddress() : "", tableCellFont)));
             }
             document.add(table);
         }
